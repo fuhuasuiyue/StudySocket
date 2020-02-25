@@ -1,7 +1,7 @@
 #生成的文件
 .bin
 .temp
-.vs
+.HelloSocket/.vs
 # Prerequisites
 *.d
 
