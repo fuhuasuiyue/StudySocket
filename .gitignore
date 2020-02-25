@@ -1,6 +1,7 @@
 #生成的文件
 .bin
 .temp
+.vs
 # Prerequisites
 *.d
 
