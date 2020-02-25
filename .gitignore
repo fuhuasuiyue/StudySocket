@@ -1,7 +1,7 @@
 #生成的文件
 .bin
 .temp
-.HelloSocket/.vs
+
 # Prerequisites
 *.d
 
@@ -34,3 +34,4 @@
 *.exe
 *.out
 *.app
+/HelloSocket/.vs
