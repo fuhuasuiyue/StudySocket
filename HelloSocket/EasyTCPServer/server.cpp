@@ -9,7 +9,9 @@
 enum CMD
 {
 	CMD_LOGIN,
+	CMD_LOGIN_RESULT,
 	CMD_LOGOUT,
+	CMD_LOGOUT_RESULT,
 	CMD_ERROR
 };
 
@@ -20,25 +22,45 @@ struct DataHeader
 };
 
 // DataPackage
-struct Login
+struct Login : public DataHeader
 {
+	Login() {
+		dataLengh = sizeof(Login);
+		cmd = CMD_LOGIN;
+	}
 	char userName[32];
 	char PassWord[32];
 };
 
-struct LoginResult
+struct LoginResult : public DataHeader
 {
+	LoginResult()
+	{
+		dataLengh = sizeof(LoginResult);
+		cmd = CMD_LOGIN_RESULT;
+		result = 0;
+
+	}
 	int result;
 	
 };
 
-struct LogOut
+struct LogOut : public DataHeader
 {
+	LogOut() {
+		dataLengh = sizeof(LogOut);
+		cmd = CMD_LOGOUT;
+	}
 	char userName[32];
 };
 
-struct LogOutResult
+struct LogOutResult : public DataHeader
 {
+	LogOutResult() {
+		dataLengh = sizeof(LogOutResult);
+		cmd = CMD_LOGOUT_RESULT;
+		result = 0;
+	}
 	int result;
 
 };
@@ -110,11 +132,11 @@ int main(int argc, char* argv[])
 		case CMD_LOGIN:
 		{
 			Login login = {};
-			recv(_cSock, (char*)&login, sizeof(Login), 0);
+			recv(_cSock, (char*)&login+sizeof(DataHeader), sizeof(Login) - sizeof(DataHeader), 0);
+			printf("收到命令：CMD_LOGIN,数据长度：%d, userName = %s, PassWord = %s\n", login.dataLengh, login.userName, login.PassWord);
+
 			// 忽略判断用户名密码
-			//printf();
-			LoginResult ret = {0};
-			send(_cSock, (char*)&header, sizeof(DataHeader), 0);
+			LoginResult ret = {};
 
 			send(_cSock, (char*)&ret, sizeof(LoginResult), 0);
 
@@ -123,11 +145,11 @@ int main(int argc, char* argv[])
 		case CMD_LOGOUT:
 			{
 				LogOut logout = {};
-				recv(_cSock, (char*)&logout, sizeof(LogOut), 0);
+				recv(_cSock, (char*)&logout+sizeof(DataHeader), sizeof(LogOut) - sizeof(DataHeader), 0);
+				printf("收到命令：CMD_LOGOUT,数据长度：%d, userName = %s,\n", logout.dataLengh, logout.userName);
 				// 忽略判断用户名密码
 				//printf();
-				LogOutResult ret = { 1 };
-				send(_cSock, (char*)&header, sizeof(DataHeader), 0);
+				LogOutResult ret = {};
 				send(_cSock, (char*)&ret, sizeof(LogOutResult), 0);
 
 			}
