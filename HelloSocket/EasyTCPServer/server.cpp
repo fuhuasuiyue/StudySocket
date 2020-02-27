@@ -109,14 +109,17 @@ int main(int argc, char* argv[])
 
 	}
 
-	printf("新客户端加入：socket = %d, IP = %s \n", (int)(_cSock), inet_ntoa(clientAddr.sin_addr));
+	printf("新客户端加入：socket = %d, IP = %s \n", (int)(_cSock), inet_ntoa(clientAddr.sin_addr)); //这个IP地址时客户端链接过来的地址，不是客户端的地址
 	//send(_cSock, msgBuf, strlen(msgBuf) + 1, 0);
 	
 	while (true)
 	{
-		DataHeader header = {};
+		
+		char szRev[1024];
 		// 5 接收客户端的请求数据
-		int nLen = recv(_cSock, (char*)&header, sizeof(header), 0);
+		int nLen = recv(_cSock, szRev, sizeof(DataHeader), 0);
+		DataHeader *header = (DataHeader*)szRev;
+
 		if (nLen <= 0)
 		{
 			printf("客户端已经退出！,任务结束\n");
@@ -124,16 +127,17 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			printf("收到命令：%d 数据长度：%d \n", header.cmd, header.dataLengh);
+			printf("收到命令：%d 数据长度：%d \n", header->cmd, header->dataLengh);
 		}
 		// 6 处理请求
-		switch (header.cmd)
+		switch (header->cmd)
 		{
 		case CMD_LOGIN:
 		{
-			Login login = {};
-			recv(_cSock, (char*)&login+sizeof(DataHeader), sizeof(Login) - sizeof(DataHeader), 0);
-			printf("收到命令：CMD_LOGIN,数据长度：%d, userName = %s, PassWord = %s\n", login.dataLengh, login.userName, login.PassWord);
+			Login *login;
+			recv(_cSock, szRev +sizeof(DataHeader), header->dataLengh - sizeof(DataHeader), 0);
+			login = (Login*)szRev;
+			printf("收到命令：CMD_LOGIN,数据长度：%d, userName = %s, PassWord = %s\n", login->dataLengh, login->userName, login->PassWord);
 
 			// 忽略判断用户名密码
 			LoginResult ret = {};
@@ -144,9 +148,10 @@ int main(int argc, char* argv[])
 			break;
 		case CMD_LOGOUT:
 			{
-				LogOut logout = {};
-				recv(_cSock, (char*)&logout+sizeof(DataHeader), sizeof(LogOut) - sizeof(DataHeader), 0);
-				printf("收到命令：CMD_LOGOUT,数据长度：%d, userName = %s,\n", logout.dataLengh, logout.userName);
+				LogOut *logout;
+				recv(_cSock, szRev+sizeof(DataHeader), header->dataLengh - sizeof(DataHeader), 0);
+				logout = (LogOut *)szRev;
+				printf("收到命令：CMD_LOGOUT,数据长度：%d, userName = %s,\n", logout->dataLengh, logout->userName);
 				// 忽略判断用户名密码
 				//printf();
 				LogOutResult ret = {};
@@ -156,8 +161,8 @@ int main(int argc, char* argv[])
 			break;
 
 		default:
-			header.cmd = CMD_ERROR;
-			header.dataLengh = 0;
+			header->cmd = CMD_ERROR;
+			header->dataLengh = 0;
 			send(_cSock, (char*)&header, sizeof(DataHeader), 0);
 			break;
 		}
