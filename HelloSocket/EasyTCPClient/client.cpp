@@ -6,6 +6,43 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
+enum CMD
+{
+	CMD_LOGIN,
+	CMD_LOGOUT,
+	CMD_ERROR
+};
+
+struct DataHeader
+{
+	short dataLengh;	// 数据长度
+	short cmd;			// 命令		
+};
+
+// DataPackage
+struct Login
+{
+	char userName[32];
+	char PassWord[32];
+};
+
+struct LoginResult
+{
+	int result;
+
+};
+
+struct LogOut
+{
+	char userName[32];
+};
+
+struct LogOutResult
+{
+	int result;
+
+};
+
 int main(int argc, char* argv[])
 {
 	WORD ver = MAKEWORD(2, 2);
@@ -34,7 +71,6 @@ int main(int argc, char* argv[])
 	if (re == SOCKET_ERROR)
 	{
 		printf("错误， 链接错误...\n");
-
 	}
 	else
 	{
@@ -45,34 +81,58 @@ int main(int argc, char* argv[])
 	char cmdBuf[128] = {};
 	while (true)
 	{
-		char recvBuf[256] = {};
-		re = recv(_sock, recvBuf, 256, 0);
-		recvBuf[255] = '\0';
-		if (re <= 0)
-		{
-			printf("错误， 接收消息错误...\n");
-		}
-		else
-		{
-			printf("接收消息成功...\n");
-			printf("接收的消息是：%s \n", recvBuf);
 
-		}
 		// 3 输入命令
 		scanf("%s", cmdBuf);
+		printf("\n\n输入的命令是： %s\n\n", cmdBuf);
 		// 4 处理请求命令
 		if (0 == strcmp(cmdBuf, "exit"))
 		{
 			printf("收到Exit退出命令\n");
 			break;
 		}
-		else
+		else if (0 == strcmp(cmdBuf, "login"))
 		{
 			printf("我发送的消息是：%s \n", cmdBuf);
-			send(_sock, cmdBuf, strlen(cmdBuf) + 1, 0);
+			Login login = {"lyd", "lydmm"};
+			DataHeader header = { sizeof(Login),CMD_LOGIN};
+			send(_sock, (char*)&header, sizeof(DataHeader), 0);
+			send(_sock, (char*)&login, sizeof(Login), 0);
+
+			// 接收服务器返回数据
+			DataHeader retHeader = {};
+
+			LoginResult retLogin = {};
+			recv(_sock, (char*)&retHeader, sizeof(DataHeader), 0);
+			recv(_sock, (char*)&retLogin, sizeof(LoginResult), 0);
+
+			printf("LogInResult: %d\n", retLogin.result);
+			
+		}
+		else if (0 == strcmp(cmdBuf, "logout"))
+		{
+			printf("我发送的消息是：%s \n", cmdBuf);
+			LogOut logout = {"lyd"};
+			DataHeader dh = { sizeof(logout), CMD_LOGOUT};
+			send(_sock, (char*)&dh, sizeof(DataHeader), 0);
+			send(_sock, (char*)&logout, sizeof(LogOut), 0);
+
+			// 接收服务器返回数据
+			DataHeader retHeader = {};
+
+			LogOutResult retLogout = {};
+			recv(_sock, (char*)&retHeader, sizeof(DataHeader), 0);
+			recv(_sock, (char*)&retLogout, sizeof(LogOutResult), 0);
+
+			printf("LogOutResult: %d\n", retLogout.result);
+			
+		}
+		else
+		{
+			printf("不支持的命令，请重新输入！\n");
 		}
 
-		memset(cmdBuf, 0, 128);
+		
 
 	}
 

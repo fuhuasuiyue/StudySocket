@@ -1,10 +1,47 @@
-#define WIN32_LEAN_AND_MEAN
+ï»¿#define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <Windows.h>
 #include <WinSock2.h>
 #include <stdio.h>
 
 #pragma comment(lib, "ws2_32.lib")
+
+enum CMD
+{
+	CMD_LOGIN,
+	CMD_LOGOUT,
+	CMD_ERROR
+};
+
+struct DataHeader
+{
+	short dataLengh;	// æ•°æ®é•¿åº¦
+	short cmd;			// å‘½ä»¤		
+};
+
+// DataPackage
+struct Login
+{
+	char userName[32];
+	char PassWord[32];
+};
+
+struct LoginResult
+{
+	int result;
+	
+};
+
+struct LogOut
+{
+	char userName[32];
+};
+
+struct LogOutResult
+{
+	int result;
+
+};
 
 int main(int argc, char* argv[])
 {
@@ -21,70 +58,100 @@ int main(int argc, char* argv[])
 	int re = bind(_sock, (sockaddr*)&_sin, sizeof(_sin));
 	if (re == SOCKET_ERROR)
 	{
-		printf("ERROR, °ó¶¨ÓÃÓÚ½ÓÊÖ¿Í»§¶ËµÄÁ´½ÓµÄÍøÂç¶Ë¿ÚÊ§°Ü\n");
+		printf("ERROR, ç»‘å®šç”¨äºæ¥æ‰‹å®¢æˆ·ç«¯çš„é“¾æ¥çš„ç½‘ç»œç«¯å£å¤±è´¥\n");
 		return -1;
 	}
 	{
-		printf("°ó¶¨ÍøÂç¶Ë¿Ú³É¹¦...\n");
+		printf("ç»‘å®šç½‘ç»œç«¯å£æˆåŠŸ...\n");
 	}
 
 	re = listen(_sock, 5);
 	if (re == SOCKET_ERROR)
 	{
-		printf("ERROR, ¼àÌıÓÃÓÚ½ÓÊÖ¿Í»§¶ËµÄÁ´½ÓµÄÍøÂç¶Ë¿ÚÊ§°Ü\n");
+		printf("ERROR, ç›‘å¬ç”¨äºæ¥æ‰‹å®¢æˆ·ç«¯çš„é“¾æ¥çš„ç½‘ç»œç«¯å£å¤±è´¥\n");
 		return -1;
 	}
 	{
-		printf("¼àÌıÍøÂç¶Ë¿Ú³É¹¦...\n");
+		printf("ç›‘å¬ç½‘ç»œç«¯å£æˆåŠŸ...\n");
 	}
-	// 4 accept µÈ´ı½ÓÊÕ¿Í»§¶ËÁ´½Ó
+	// 4 accept ç­‰å¾…æ¥æ”¶å®¢æˆ·ç«¯é“¾æ¥
 	sockaddr_in clientAddr;
 	int nAddrLen = sizeof(sockaddr_in);
 	SOCKET _cSock = INVALID_SOCKET;
-	char msgBuf[] = "Hello, I'm Server!\n";
 
 	_cSock = accept(_sock, (sockaddr*)&clientAddr, &nAddrLen);
 
 	if (INVALID_SOCKET == _cSock)
 	{
-		printf("´íÎó£¬ ½ÓÊÜµ½ÎŞĞ§µÄ¿Í»§¶ËÁ´½Ó...\n");
+		printf("é”™è¯¯ï¼Œ æ¥å—åˆ°æ— æ•ˆçš„å®¢æˆ·ç«¯é“¾æ¥...\n");
 
 	}
 
-	printf("ĞÂ¿Í»§¶Ë¼ÓÈë£ºsocket = %d, IP = %s \n", (int)(_cSock), inet_ntoa(clientAddr.sin_addr));
-	send(_cSock, msgBuf, strlen(msgBuf) + 1, 0);
+	printf("æ–°å®¢æˆ·ç«¯åŠ å…¥ï¼šsocket = %d, IP = %s \n", (int)(_cSock), inet_ntoa(clientAddr.sin_addr));
+	//send(_cSock, msgBuf, strlen(msgBuf) + 1, 0);
 	
 	while (true)
 	{
-		char cmdBuf[128] = {};
-		// 5 ½ÓÊÕ¿Í»§¶ËµÄÇëÇóÊı¾İ
-		int nLen = recv(_cSock, cmdBuf, 128, 0);
+		DataHeader header = {};
+		// 5 æ¥æ”¶å®¢æˆ·ç«¯çš„è¯·æ±‚æ•°æ®
+		int nLen = recv(_cSock, (char*)&header, sizeof(header), 0);
 		if (nLen <= 0)
 		{
-			printf("¿Í»§¶ËÒÑ¾­ÍË³ö£¡,ÈÎÎñ½áÊø\n");
+			printf("å®¢æˆ·ç«¯å·²ç»é€€å‡ºï¼,ä»»åŠ¡ç»“æŸ\n");
 			break;
 		}
 		else
 		{
-			printf("·şÎñÆ÷½ÓÊÕµÄÊı¾İÎª£º%s \n", cmdBuf);
+			printf("æ”¶åˆ°å‘½ä»¤ï¼š%d æ•°æ®é•¿åº¦ï¼š%d \n", header.cmd, header.dataLengh);
 		}
-		// 6 ´¦ÀíÇëÇó
-		if (0 == strcmp(cmdBuf, "getName"))
+		// 6 å¤„ç†è¯·æ±‚
+		switch (header.cmd)
 		{
-			char msgBuf[] = "xiaoqiang\n";
-			send(_cSock, msgBuf, strlen(msgBuf) + 1, 0);
-		}
-		else if (0 == strcmp(cmdBuf, "getAge"))
+		case CMD_LOGIN:
 		{
-			char msgBuf[] = "80Ëê\n";
-			send(_cSock, msgBuf, strlen(msgBuf) + 1, 0);
-		}
-		else
-		{
-			char msgBuf[] = "?????...\n";
-			send(_cSock, msgBuf, strlen(msgBuf) + 1, 0);
+			Login login = {};
+			recv(_cSock, (char*)&login, sizeof(Login), 0);
+			// å¿½ç•¥åˆ¤æ–­ç”¨æˆ·åå¯†ç 
+			//printf();
+			LoginResult ret = {0};
+			send(_cSock, (char*)&header, sizeof(DataHeader), 0);
+
+			send(_cSock, (char*)&ret, sizeof(LoginResult), 0);
 
 		}
+			break;
+		case CMD_LOGOUT:
+			{
+				LogOut logout = {};
+				recv(_cSock, (char*)&logout, sizeof(LogOut), 0);
+				// å¿½ç•¥åˆ¤æ–­ç”¨æˆ·åå¯†ç 
+				//printf();
+				LogOutResult ret = { 1 };
+				send(_cSock, (char*)&header, sizeof(DataHeader), 0);
+				send(_cSock, (char*)&ret, sizeof(LogOutResult), 0);
+
+			}
+			break;
+
+		default:
+			header.cmd = CMD_ERROR;
+			header.dataLengh = 0;
+			send(_cSock, (char*)&header, sizeof(DataHeader), 0);
+			break;
+		}
+
+		//if (0 == strcmp(cmdBuf, "getInfo"))
+		//{
+		//	DataPackage dp = {80, "å¼ å›½è£"};
+		//	
+		//	send(_cSock, (char*)&dp, sizeof(DataPackage), 0);
+		//}
+		//else
+		//{
+		//	char msgBuf[] = "?????...\n";
+		//	send(_cSock, msgBuf, strlen(msgBuf) + 1, 0);
+
+		//}
 
 		
 
